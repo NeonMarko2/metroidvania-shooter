@@ -17,20 +17,40 @@ local function checkOverlap(collider1, collider2)
 	return false
 end
 
-function simpleCollision:update()
-	for index, collider in ipairs(self.world) do
-		for _, secondCollider in ipairs(self.world) do
+local collisionMetaData = {}
+collisionMetaData.__index = collisionMetaData
+
+function collisionMetaData:detectCollision()
+	for _, otherCollider in ipairs(Collision.world) do
+		if self ~= otherCollider then
+			if checkOverlap(self, otherCollider) then
+				return true
+			end
 		end
 	end
+	return false
 end
+
+function simpleCollision:update() end
 
 function simpleCollision:addCollider(position, scale, isStatic)
-	local collider = { position = position, scale = scale }
+	local collider = {
+		position = position,
+		scale = scale,
+	}
 	self.world[#self.world + 1] = collider
-	return collider
+	return setmetatable(collider, collisionMetaData)
 end
 
-function simpleCollision:checkSquare() end
+function simpleCollision:checkSquare(position, scale, layerIndex)
+	local collider = { position = position, scale = scale }
+	for _, secondCollider in ipairs(self.world) do
+		if checkOverlap(collider, secondCollider) == true then
+			return true
+		end
+	end
+	return false
+end
 
 function simpleCollision:checkPoint() end
 
