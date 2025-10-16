@@ -37,6 +37,53 @@ end
 
 function simpleCollision:update() end
 
+local function getColliderPoints(collider)
+	local point1 = collider.position + Vector2.new(collider.scale.x, collider.scale.y) / 2
+	local point2 = collider.position + Vector2.new(collider.scale.x, -collider.scale.y) / 2
+	local point3 = collider.position + Vector2.new(-collider.scale.x, collider.scale.y) / 2
+	local point4 = collider.position + Vector2.new(-collider.scale.x, -collider.scale.y) / 2
+	return point1, point2, point3, point4
+end
+
+---@param start Vector
+---@param _end Vector
+function simpleCollision:checkLine(start, _end)
+	rayStart = start
+	rayEnd = _end
+	local lineAxis = (_end - start):normalized()
+	lineAxis = Vector2.new(lineAxis.y, -lineAxis.x)
+	local axisProjections = { lineAxis, Vector2.new(0, 1), Vector2.new(1, 0) }
+	for _, collider in ipairs(self.world) do
+		local points = { getColliderPoints(collider) }
+		local isColliding = true
+		for _, axis in ipairs(axisProjections) do
+			local pointMin, pointMax = 99999, -99999
+			for _, point in pairs(points) do
+				local pointDotProduct = point:dot(axis)
+				pointMin = math.min(pointDotProduct, pointMin)
+				pointMax = math.max(pointDotProduct, pointMax)
+			end
+			local lineMin = math.min(start:dot(axis), _end:dot(axis))
+			local lineMax = math.max(start:dot(axis), _end:dot(axis))
+			print(lineMin .. " " .. lineMax .. " | " .. pointMin .. " " .. pointMax)
+
+			if lineMin > pointMax then
+				isColliding = false
+				break
+			elseif lineMax < pointMin then
+				isColliding = false
+				break
+			end
+		end
+		if isColliding then
+			return true
+		end
+	end
+	return false
+end
+
+---@param position Vector
+---@param scale Vector
 function simpleCollision:addCollider(position, scale, isStatic)
 	local collider = {
 		position = position,
