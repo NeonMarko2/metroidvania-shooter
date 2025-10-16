@@ -17,7 +17,11 @@ local function checkOverlap(collider1, collider2)
 	return false
 end
 
-local collisionMetaData = {}
+---@class Collider
+---@field position Vector
+---@field scale Vector
+local collisionMetaData = { position = nil, scale = nil }
+---@private
 collisionMetaData.__index = collisionMetaData
 
 function collisionMetaData:detectCollision()
