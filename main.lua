@@ -40,6 +40,7 @@ end
 function love.update(dt)
 	player:update(dt)
 	runObjectUpdates(dt)
+	Timer:update(dt)
 	local mouseX, mouseY = love.mouse.getPosition()
 	Collision:update()
 end

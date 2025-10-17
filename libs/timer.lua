@@ -52,7 +52,6 @@ end
 function timer:update(dt)
 	for index, request in ipairs(self.requests) do
 		request.time = request.time - dt
-
 		if request.time <= 0 then
 			if request.type == "after" then
 				request.func()
