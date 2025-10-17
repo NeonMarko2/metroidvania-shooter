@@ -71,6 +71,12 @@ function vectorBase:magnitude()
 	return math.sqrt(x + y)
 end
 
+---returns a copy of the vector
+---@return Vector
+function vectorBase:copy()
+	return vector2.new(self.x, self.y)
+end
+
 ---@param point Vector
 function vectorBase:dot(point)
 	local x, y = self.x, self.y
