@@ -3,9 +3,14 @@ Signal = require("libs.signal")
 Flux = require("libs.flux")
 Timer = require("libs.timer")
 Console = require("libs.console")
+Collision = require("libs.simpleCollision")
+PhysicsBody = require("libs.physicsBody")
 local player = require("player")
 
-function love.load() end
+function love.load()
+	Collision:addCollider(Vector2.new(400, 300), Vector2.new(100, 100), false)
+	Collision:addCollider(Vector2.new(400, 550), Vector2.new(1000, 25), true)
+end
 
 function love.keypressed(key)
 	if key == "`" then
@@ -14,12 +19,17 @@ function love.keypressed(key)
 	end
 end
 
+function love.mousepressed(x, y, button) end
+
 function love.update(dt)
 	player:update(dt)
+	local mouseX, mouseY = love.mouse.getPosition()
+	Collision:update()
 end
 
 function love.draw()
 	love.graphics.setBackgroundColor(0.4, 0.2, 0.3, 1)
-	Console:draw()
 	player:draw()
+	Collision:drawColliders_Debug()
+	Console:draw()
 end
