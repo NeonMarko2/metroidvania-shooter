@@ -48,8 +48,6 @@ end
 ---@param start Vector
 ---@param _end Vector
 function simpleCollision:checkLine(start, _end)
-	rayStart = start
-	rayEnd = _end
 	local lineAxis = (_end - start):normalized()
 	lineAxis = Vector2.new(lineAxis.y, -lineAxis.x)
 	local axisProjections = { lineAxis, Vector2.new(0, 1), Vector2.new(1, 0) }
