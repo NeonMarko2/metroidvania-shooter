@@ -19,10 +19,27 @@ function love.keypressed(key)
 	end
 end
 
+local objects = {}
+
+function AddToUpdate(object)
+	objects[object] = object
+end
+
+function RemoveFromUpdate(object)
+	objects[object] = nil
+end
+
 function love.mousepressed(x, y, button) end
+
+local function runObjectUpdates(dt)
+	for _, object in pairs(objects) do
+		object:update(dt)
+	end
+end
 
 function love.update(dt)
 	player:update(dt)
+	runObjectUpdates(dt)
 	local mouseX, mouseY = love.mouse.getPosition()
 	Collision:update()
 end
