@@ -1,6 +1,9 @@
 local physicsBody = {}
 
 ---@class Body
+---@field isGrounded boolean
+---@field collider Collider
+---@field velocity Vector
 local bodyMetaData = {}
 
 ---@private
@@ -10,7 +13,7 @@ bodyMetaData.__index = bodyMetaData
 ---@param newPosition Vector The position the body will attempt to move to.
 ---@return boolean wasSuccessful
 function bodyMetaData:move(newPosition)
-	local previousPosition = Vector2.new(self.collider.position.x, self.collider.position.y)
+	local previousPosition = self.collider.position:copy()
 	self.collider.position = newPosition
 	if self.collider:detectCollision() then
 		self.collider.position = previousPosition
@@ -20,6 +23,8 @@ function bodyMetaData:move(newPosition)
 	return true
 end
 
+---asign the body a new velocity
+---@param newVelocity Vector
 function bodyMetaData:throw(newVelocity)
 	self.velocity = newVelocity
 end
@@ -27,18 +32,24 @@ end
 ---@param dt number delta time
 function bodyMetaData:update(dt)
 	if not self:move(self.collider.position + Vector2.new(0, self.velocity.y) * dt) then
+		if self.velocity.y > 0 then
+			self.isGrounded = true
+		end
 		self.velocity.y = 0
+	else
+		self.isGrounded = false
 	end
 	if not self:move(self.collider.position + Vector2.new(self.velocity.x, 0) * dt) then
 		self.velocity.x = 0
 	end
+
 	self:move(self.collider.position + Vector2.new(self.velocity.x, 0) * dt)
-	self.velocity.y = self.velocity.y + 100 * dt
+	self.velocity.y = self.velocity.y + 2000 * dt
 end
 
 ---@param collider Collider
 function physicsBody.new(collider)
-	local body = { collider = collider, velocity = Vector2.new(0, 0) }
+	local body = { collider = collider, velocity = Vector2.new(0, 0), isGrounded = false }
 	return setmetatable(body, bodyMetaData)
 end
 

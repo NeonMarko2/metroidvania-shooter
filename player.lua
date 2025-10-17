@@ -10,8 +10,8 @@ function player:update(dt)
 	elseif love.keyboard.isDown("a") then
 		player.body:move(self.position - Vector2.new(180, 0) * dt)
 	end
-	if love.keyboard.isDown("space") then
-		player.body:throw(Vector2.new(0, -100))
+	if love.keyboard.isDown("space") and player.body.isGrounded then
+		player.body:throw(Vector2.new(0, -600))
 	end
 	player.body:update(dt)
 	player.position = player.collider.position
