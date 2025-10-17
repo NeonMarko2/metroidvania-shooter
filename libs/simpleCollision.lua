@@ -80,6 +80,18 @@ function simpleCollision:checkLine(start, _end)
 	return false
 end
 
+---Removes a collider from the world. THIS FUNCTION SHOULD GET REPLACED WHEN CREATING SPATIAL PARTITIONING
+---@param colliderToRemove Collider
+---@deprecated
+function simpleCollision:removeCollider(colliderToRemove)
+	for colliderIndex, collider in ipairs(self.world) do
+		if colliderToRemove == collider then
+			table.remove(self.world, colliderIndex)
+			return
+		end
+	end
+end
+
 ---@param position Vector
 ---@param scale Vector
 function simpleCollision:addCollider(position, scale, isStatic)
