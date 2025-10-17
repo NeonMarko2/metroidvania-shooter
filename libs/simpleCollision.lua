@@ -103,7 +103,22 @@ function simpleCollision:checkSquare(position, scale, layerIndex)
 	return false
 end
 
-function simpleCollision:checkPoint() end
+function simpleCollision:checkPoint(position)
+	for _, collider in ipairs(self.world) do
+		if
+			position.x > collider.position.x - collider.scale.x / 2
+			and position.x < collider.position.x + collider.scale.x / 2
+		then
+			if
+				position.y > collider.position.y - collider.scale.y / 2
+				and position.y < collider.position.y + collider.scale.y / 2
+			then
+				return true
+			end
+		end
+	end
+	return false
+end
 
 function simpleCollision:drawColliders_Debug()
 	love.graphics.push()
