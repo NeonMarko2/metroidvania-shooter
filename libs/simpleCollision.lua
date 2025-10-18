@@ -5,8 +5,6 @@ simpleCollision.lookUp = {}
 simpleCollision.partitions = {}
 local PARTITION_SIZE = 400
 
-local layers = {}
-
 local function checkLayer(layer, layerIndex)
 	if layer == nil then
 		return true
@@ -72,20 +70,30 @@ local function getColliderPoints(collider)
 end
 
 function simpleCollision:setCollidersPartitions(collider)
+	local bottomRightPoint, _, _, topLeftPoint = getColliderPoints(collider)
 	local points = { getColliderPoints(collider) }
-	for index, point in ipairs(points) do
-		local x = math.floor(point.x / PARTITION_SIZE)
-		local y = math.floor(point.y / PARTITION_SIZE)
-		simpleCollision.partitions[x] = simpleCollision.partitions[x] or {}
-		simpleCollision.partitions[x][y] = simpleCollision.partitions[x][y] or {}
-		simpleCollision.partitions[x][y][collider] = collider
-		simpleCollision.lookUp[collider] = simpleCollision.lookUp[collider] or {}
-		simpleCollision.lookUp[collider][index] = simpleCollision.partitions[x][y]
+
+	local topLeftPartition =
+		Vector2.new(math.floor(topLeftPoint.x / PARTITION_SIZE), math.floor(topLeftPoint.y / PARTITION_SIZE))
+	local bottomRightPartition =
+		Vector2.new(math.floor(bottomRightPoint.x / PARTITION_SIZE), math.floor(bottomRightPoint.y / PARTITION_SIZE))
+
+	for x = topLeftPartition.x, bottomRightPartition.x, 1 do
+		for y = topLeftPartition.y, bottomRightPartition.y, 1 do
+			simpleCollision.partitions[x] = simpleCollision.partitions[x] or {}
+			simpleCollision.partitions[x][y] = simpleCollision.partitions[x][y] or {}
+			simpleCollision.partitions[x][y][collider] = collider
+			simpleCollision.lookUp[collider] = simpleCollision.lookUp[collider] or {}
+			simpleCollision.lookUp[collider][#simpleCollision.lookUp[collider] + 1] = simpleCollision.partitions[x][y]
+		end
 	end
 end
 
 function simpleCollision:removeCollidersPartitions(collider)
 	local collidersPartitions = simpleCollision.lookUp[collider]
+	if collidersPartitions == nil then
+		error("Trying to remove collider partitions, but collider isnt established in any partitions")
+	end
 	for _, partition in pairs(collidersPartitions) do
 		partition[collider] = nil
 	end
@@ -167,8 +175,6 @@ function simpleCollision:addCollider(position, scale, isStatic, layer)
 	self:setCollidersPartitions(collider)
 
 	self.world[#self.world + 1] = collider
-
-	layers[layer] = layer
 
 	return setmetatable(collider, collisionMetaData)
 end
