@@ -1,6 +1,52 @@
 local simpleCollision = {}
 
 simpleCollision.world = {}
+simpleCollision.lookUp = {}
+simpleCollision.partitions = {}
+local PARTITION_SIZE = 400
+
+local layers = {}
+
+local function checkLayer(layer, layerIndex)
+	if layer == nil then
+		return true
+	end
+
+	local mode = layer.mode
+
+	if mode == "whitelist" then
+		for _, value in ipairs(layer.layers) do
+			if value == layerIndex then
+				return true
+			end
+		end
+		return false
+	end
+	if mode == "blacklist" then
+		for _, value in ipairs(layer.layers) do
+			if value == layerIndex then
+				return false
+			end
+		end
+		return true
+	end
+end
+
+local function getPossibleColliders(collider, layer)
+	local colliders = {}
+
+	local partitionsToCheck = simpleCollision.lookUp[collider]
+
+	for _, partition in ipairs(partitionsToCheck) do
+		for index, collider in pairs(partition) do
+			if checkLayer(layer, collider.layer) then
+				colliders[#colliders + 1] = collider
+			end
+		end
+	end
+
+	return colliders
+end
 
 local function checkOverlap(collider1, collider2)
 	if
@@ -17,15 +63,45 @@ local function checkOverlap(collider1, collider2)
 	return false
 end
 
+local function getColliderPoints(collider)
+	local point1 = collider.position + Vector2.new(collider.scale.x, collider.scale.y) / 2
+	local point2 = collider.position + Vector2.new(collider.scale.x, -collider.scale.y) / 2
+	local point3 = collider.position + Vector2.new(-collider.scale.x, collider.scale.y) / 2
+	local point4 = collider.position + Vector2.new(-collider.scale.x, -collider.scale.y) / 2
+	return point1, point2, point3, point4
+end
+
+function simpleCollision:setCollidersPartitions(collider)
+	local points = { getColliderPoints(collider) }
+	for index, point in ipairs(points) do
+		local x = math.floor(point.x / PARTITION_SIZE)
+		local y = math.floor(point.y / PARTITION_SIZE)
+		simpleCollision.partitions[x] = simpleCollision.partitions[x] or {}
+		simpleCollision.partitions[x][y] = simpleCollision.partitions[x][y] or {}
+		simpleCollision.partitions[x][y][collider] = collider
+		simpleCollision.lookUp[collider] = simpleCollision.lookUp[collider] or {}
+		simpleCollision.lookUp[collider][index] = simpleCollision.partitions[x][y]
+	end
+end
+
+function simpleCollision:removeCollidersPartitions(collider)
+	local collidersPartitions = simpleCollision.lookUp[collider]
+	for _, partition in pairs(collidersPartitions) do
+		partition[collider] = nil
+	end
+end
+
 ---@class Collider
 ---@field position Vector
 ---@field scale Vector
 local collisionMetaData = { position = nil, scale = nil }
 ---@private
 collisionMetaData.__index = collisionMetaData
+---@private
+collisionMetaData.layer = nil
 
-function collisionMetaData:detectCollision()
-	for _, otherCollider in ipairs(Collision.world) do
+function collisionMetaData:detectCollision(layer)
+	for _, otherCollider in ipairs(getPossibleColliders(self, layer)) do
 		if self ~= otherCollider then
 			if checkOverlap(self, otherCollider) then
 				return true
@@ -35,15 +111,13 @@ function collisionMetaData:detectCollision()
 	return false
 end
 
-function simpleCollision:update() end
-
-local function getColliderPoints(collider)
-	local point1 = collider.position + Vector2.new(collider.scale.x, collider.scale.y) / 2
-	local point2 = collider.position + Vector2.new(collider.scale.x, -collider.scale.y) / 2
-	local point3 = collider.position + Vector2.new(-collider.scale.x, collider.scale.y) / 2
-	local point4 = collider.position + Vector2.new(-collider.scale.x, -collider.scale.y) / 2
-	return point1, point2, point3, point4
+function collisionMetaData:move(position)
+	simpleCollision:removeCollidersPartitions(self)
+	self.position = position
+	simpleCollision:setCollidersPartitions(self)
 end
+
+function simpleCollision:update() end
 
 ---@param start Vector
 ---@param _end Vector
@@ -51,7 +125,7 @@ function simpleCollision:checkLine(start, _end)
 	local lineAxis = (_end - start):normalized()
 	lineAxis = Vector2.new(lineAxis.y, -lineAxis.x)
 	local axisProjections = { lineAxis, Vector2.new(0, 1), Vector2.new(1, 0) }
-	for _, collider in ipairs(self.world) do
+	for _, collider in ipairs(getPossibleColliders()) do
 		local points = { getColliderPoints(collider) }
 		local isColliding = true
 		for _, axis in ipairs(axisProjections) do
@@ -82,18 +156,26 @@ end
 
 ---@param position Vector
 ---@param scale Vector
-function simpleCollision:addCollider(position, scale, isStatic)
+function simpleCollision:addCollider(position, scale, isStatic, layer)
+	layer = layer or "unorganized"
 	local collider = {
 		position = position,
 		scale = scale,
+		layer = layer,
 	}
+
+	self:setCollidersPartitions(collider)
+
 	self.world[#self.world + 1] = collider
+
+	layers[layer] = layer
+
 	return setmetatable(collider, collisionMetaData)
 end
 
 function simpleCollision:checkSquare(position, scale, layerIndex)
 	local collider = { position = position, scale = scale }
-	for _, secondCollider in ipairs(self.world) do
+	for _, secondCollider in ipairs(getPossibleColliders(collider)) do
 		if checkOverlap(collider, secondCollider) == true then
 			return true
 		end
@@ -102,7 +184,7 @@ function simpleCollision:checkSquare(position, scale, layerIndex)
 end
 
 function simpleCollision:checkPoint(position)
-	for _, collider in ipairs(self.world) do
+	for _, collider in ipairs(getPossibleColliders()) do
 		if
 			position.x > collider.position.x - collider.scale.x / 2
 			and position.x < collider.position.x + collider.scale.x / 2
@@ -121,7 +203,7 @@ end
 function simpleCollision:drawColliders_Debug()
 	love.graphics.push()
 	love.graphics.setColor(1, 0, 0, 0.25)
-	for i, v in ipairs(self.world) do
+	for i, v in pairs(self.world) do
 		love.graphics.rectangle(
 			"fill",
 			v.position.x - v.scale.x / 2,
@@ -130,6 +212,23 @@ function simpleCollision:drawColliders_Debug()
 			v.scale.y
 		)
 	end
+
+	for x, collumn in pairs(simpleCollision.partitions) do
+		for y, partition in pairs(collumn) do
+			local count = 0
+			for _, colllider in pairs(partition) do
+				count = count + 1
+			end
+			love.graphics.setColor(1, 1, 1, 0.2 * count)
+			love.graphics.rectangle("fill", x * PARTITION_SIZE, y * PARTITION_SIZE, PARTITION_SIZE, PARTITION_SIZE)
+			love.graphics.print(
+				count,
+				x * PARTITION_SIZE + (PARTITION_SIZE / 2),
+				y * PARTITION_SIZE + (PARTITION_SIZE / 5)
+			)
+		end
+	end
+
 	love.graphics.setColor(1, 1, 1, 1)
 	love.graphics.pop()
 end

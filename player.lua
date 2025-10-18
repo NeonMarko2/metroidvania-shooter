@@ -1,6 +1,6 @@
 local player = {}
 
-player.position = Vector2.new(200, 300)
+player.position = Vector2.new(450, 100)
 player.collider = Collision:addCollider(player.position, Vector2.new(50, 50), false)
 player.body = PhysicsBody.new(player.collider)
 
