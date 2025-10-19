@@ -30,13 +30,11 @@ local function checkLayer(layer, layerIndex)
 	end
 end
 
-local function getPossibleColliders(collider, layer)
+local function getPossibleColliders(partitions, layer)
 	local colliders = {}
 
-	local partitionsToCheck = simpleCollision.lookUp[collider]
-
-	for _, partition in ipairs(partitionsToCheck) do
-		for index, collider in pairs(partition) do
+	for _, partition in ipairs(partitions) do
+		for _, collider in pairs(partition) do
 			if checkLayer(layer, collider.layer) then
 				colliders[#colliders + 1] = collider
 			end
@@ -69,23 +67,32 @@ local function getColliderPoints(collider)
 	return point1, point2, point3, point4
 end
 
-function simpleCollision:setCollidersPartitions(collider)
-	local bottomRightPoint, _, _, topLeftPoint = getColliderPoints(collider)
-	local points = { getColliderPoints(collider) }
-
+local function getPartitionsFromArea(topLeftPoint, bottomRightPoint)
 	local topLeftPartition =
 		Vector2.new(math.floor(topLeftPoint.x / PARTITION_SIZE), math.floor(topLeftPoint.y / PARTITION_SIZE))
 	local bottomRightPartition =
 		Vector2.new(math.floor(bottomRightPoint.x / PARTITION_SIZE), math.floor(bottomRightPoint.y / PARTITION_SIZE))
 
+	local partitions = {}
+
 	for x = topLeftPartition.x, bottomRightPartition.x, 1 do
 		for y = topLeftPartition.y, bottomRightPartition.y, 1 do
 			simpleCollision.partitions[x] = simpleCollision.partitions[x] or {}
 			simpleCollision.partitions[x][y] = simpleCollision.partitions[x][y] or {}
-			simpleCollision.partitions[x][y][collider] = collider
-			simpleCollision.lookUp[collider] = simpleCollision.lookUp[collider] or {}
-			simpleCollision.lookUp[collider][#simpleCollision.lookUp[collider] + 1] = simpleCollision.partitions[x][y]
+			partitions[#partitions + 1] = simpleCollision.partitions[x][y]
 		end
+	end
+
+	return partitions
+end
+
+function simpleCollision:setCollidersPartitions(collider)
+	local bottomRightPoint, _, _, topLeftPoint = getColliderPoints(collider)
+
+	for _, partition in ipairs(getPartitionsFromArea(topLeftPoint, bottomRightPoint)) do
+		partition[collider] = collider
+		simpleCollision.lookUp[collider] = simpleCollision.lookUp[collider] or {}
+		simpleCollision.lookUp[collider][#simpleCollision.lookUp[collider] + 1] = partition
 	end
 end
 
@@ -102,14 +109,14 @@ end
 ---@class Collider
 ---@field position Vector
 ---@field scale Vector
-local collisionMetaData = { position = nil, scale = nil }
+local collisionMetaData = { position = nil, scale = nil, super = nil }
 ---@private
 collisionMetaData.__index = collisionMetaData
 ---@private
 collisionMetaData.layer = nil
 
 function collisionMetaData:detectCollision(layer)
-	for _, otherCollider in ipairs(getPossibleColliders(self, layer)) do
+	for _, otherCollider in ipairs(getPossibleColliders(simpleCollision.lookUp[self], layer)) do
 		if self ~= otherCollider then
 			if checkOverlap(self, otherCollider) then
 				return true
@@ -133,7 +140,26 @@ function simpleCollision:checkLine(start, _end)
 	local lineAxis = (_end - start):normalized()
 	lineAxis = Vector2.new(lineAxis.y, -lineAxis.x)
 	local axisProjections = { lineAxis, Vector2.new(0, 1), Vector2.new(1, 0) }
-	for _, collider in ipairs(getPossibleColliders()) do
+
+	local topLeftPoint
+	local bottomRightPoint
+
+	if start.x < _end.x then
+		topLeftPoint = start:copy()
+		bottomRightPoint = _end:copy()
+	else
+		topLeftPoint = _end:copy()
+		bottomRightPoint = start:copy()
+	end
+	if topLeftPoint.y > bottomRightPoint.y then
+		local lowerYHeight = topLeftPoint.y
+		topLeftPoint.y = bottomRightPoint.y
+		bottomRightPoint.y = lowerYHeight
+	end
+
+	local partitions = getPartitionsFromArea(topLeftPoint, bottomRightPoint)
+
+	for _, collider in ipairs(getPossibleColliders(partitions)) do
 		local points = { getColliderPoints(collider) }
 		local isColliding = true
 		for _, axis in ipairs(axisProjections) do
@@ -145,7 +171,6 @@ function simpleCollision:checkLine(start, _end)
 			end
 			local lineMin = math.min(start:dot(axis), _end:dot(axis))
 			local lineMax = math.max(start:dot(axis), _end:dot(axis))
-			print(lineMin .. " " .. lineMax .. " | " .. pointMin .. " " .. pointMax)
 
 			if lineMin > pointMax then
 				isColliding = false
@@ -164,12 +189,13 @@ end
 
 ---@param position Vector
 ---@param scale Vector
-function simpleCollision:addCollider(position, scale, isStatic, layer)
+function simpleCollision:addCollider(position, scale, isStatic, super, layer)
 	layer = layer or "unorganized"
 	local collider = {
 		position = position,
 		scale = scale,
 		layer = layer,
+		super = super,
 	}
 
 	self:setCollidersPartitions(collider)
@@ -181,7 +207,10 @@ end
 
 function simpleCollision:checkSquare(position, scale, layerIndex)
 	local collider = { position = position, scale = scale }
-	for _, secondCollider in ipairs(getPossibleColliders(collider)) do
+	local partitions =
+		getPartitionsFromArea(collider.position - collider.scale / 2, collider.position + collider.scale / 2)
+
+	for _, secondCollider in ipairs(getPossibleColliders(partitions)) do
 		if checkOverlap(collider, secondCollider) == true then
 			return true
 		end
@@ -190,7 +219,9 @@ function simpleCollision:checkSquare(position, scale, layerIndex)
 end
 
 function simpleCollision:checkPoint(position)
-	for _, collider in ipairs(getPossibleColliders()) do
+	local partition =
+		{ self.partitions[math.floor(position.x / PARTITION_SIZE)][math.floor(position.y / PARTITION_SIZE)] }
+	for _, collider in ipairs(getPossibleColliders(partition)) do
 		if
 			position.x > collider.position.x - collider.scale.x / 2
 			and position.x < collider.position.x + collider.scale.x / 2
