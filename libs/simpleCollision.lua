@@ -108,7 +108,7 @@ end
 ---@class Collider
 ---@field position Vector
 ---@field scale Vector
----@field super table This is a table assigned when the collider is generated. It is an additional table that is returned when another collider collides with this one
+---@field super? table This is a table assigned when the collider is generated. It is an additional table that is returned when another collider collides with this one
 local collisionMetaData = { position = nil, scale = nil, super = nil }
 ---@private
 collisionMetaData.__index = collisionMetaData
@@ -116,14 +116,15 @@ collisionMetaData.__index = collisionMetaData
 collisionMetaData.layer = nil
 
 function collisionMetaData:detectCollision(layer)
+	local supers = {}
 	for _, otherCollider in ipairs(getPossibleColliders(simpleCollision.lookUp[self], layer)) do
 		if self ~= otherCollider then
 			if checkOverlap(self, otherCollider) then
-				return true
+				supers[#supers + 1] = otherCollider.super
 			end
 		end
 	end
-	return false
+	return #supers ~= 0, supers
 end
 
 function collisionMetaData:move(position)
@@ -183,7 +184,7 @@ function simpleCollision:checkLine(start, _end, filteringSettings)
 			end
 		end
 		if isColliding then
-			return true
+			return true, collider.super
 		end
 	end
 	return false
@@ -192,7 +193,7 @@ end
 ---Creates, registers, and returns a collider with the given values. Note: The collider is hard referenced in the collider library
 ---@param position Vector
 ---@param scale Vector
----@param super? table An additional table the collider will return upon being collided with
+---@param super? table A value that gets returned when something collides with this collider. By default (nil) it will be the collider itself
 ---@param layer? string Determines on what layer the collider will exist on. Used for filtered collision detection
 function simpleCollision:addCollider(position, scale, super, layer)
 	layer = layer or "unorganized"
@@ -200,7 +201,7 @@ function simpleCollision:addCollider(position, scale, super, layer)
 		position = position,
 		scale = scale,
 		layer = layer,
-		super = super,
+		super = super or self,
 	}
 
 	self:setCollidersPartitions(collider)
@@ -214,21 +215,23 @@ end
 ---@param filteringSettings? table Specifies the filtering settings used during collision detection. Used when wanting only specific objects to be detected
 function simpleCollision:checkSquare(position, scale, filteringSettings)
 	local collider = { position = position, scale = scale }
+	local supers = {}
 	local partitions =
 		getPartitionsFromArea(collider.position - collider.scale / 2, collider.position + collider.scale / 2)
 
 	for _, secondCollider in ipairs(getPossibleColliders(partitions, filteringSettings)) do
 		if checkOverlap(collider, secondCollider) == true then
-			return true
+			supers[#supers + 1] = secondCollider.super
 		end
 	end
-	return false
+	return #supers ~= 0, supers
 end
 
 ---Detects collision at a point
 ---@param position Vector
 ---@param filteringSettings? table
 function simpleCollision:checkPoint(position, filteringSettings)
+	local supers = {}
 	local partition =
 		{ self.partitions[math.floor(position.x / PARTITION_SIZE)][math.floor(position.y / PARTITION_SIZE)] }
 	for _, collider in ipairs(getPossibleColliders(partition, filteringSettings)) do
@@ -240,11 +243,12 @@ function simpleCollision:checkPoint(position, filteringSettings)
 				position.y > collider.position.y - collider.scale.y / 2
 				and position.y < collider.position.y + collider.scale.y / 2
 			then
-				return true
+				supers[#supers + 1] = collider.super
 			end
 		end
 	end
-	return false
+
+	return #supers ~= 0, supers
 end
 
 function simpleCollision:drawColliders_Debug()
