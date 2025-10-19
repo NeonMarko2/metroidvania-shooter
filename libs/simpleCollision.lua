@@ -4,24 +4,24 @@ simpleCollision.lookUp = {}
 simpleCollision.partitions = {}
 local PARTITION_SIZE = 400
 
-local function checkLayer(layer, layerIndex)
-	if layer == nil then
+local function checkLayer(layerSettings, layer)
+	if layerSettings == nil then
 		return true
 	end
 
-	local mode = layer.mode
+	local mode = layerSettings.mode
 
 	if mode == "whitelist" then
-		for _, value in ipairs(layer.layers) do
-			if value == layerIndex then
+		for _, value in ipairs(layerSettings.layers) do
+			if value == layer then
 				return true
 			end
 		end
 		return false
 	end
 	if mode == "blacklist" then
-		for _, value in ipairs(layer.layers) do
-			if value == layerIndex then
+		for _, value in ipairs(layerSettings.layers) do
+			if value == layer then
 				return false
 			end
 		end
@@ -29,12 +29,12 @@ local function checkLayer(layer, layerIndex)
 	end
 end
 
-local function getPossibleColliders(partitions, layer)
+local function getPossibleColliders(partitions, layerSettings)
 	local colliders = {}
 
 	for _, partition in ipairs(partitions) do
 		for _, collider in pairs(partition) do
-			if checkLayer(layer, collider.layer) then
+			if checkLayer(layerSettings, collider.layer) then
 				colliders[#colliders + 1] = collider
 			end
 		end
@@ -108,6 +108,7 @@ end
 ---@class Collider
 ---@field position Vector
 ---@field scale Vector
+---@field super table This is a table assigned when the collider is generated. It is an additional table that is returned when another collider collides with this one
 local collisionMetaData = { position = nil, scale = nil, super = nil }
 ---@private
 collisionMetaData.__index = collisionMetaData
@@ -133,9 +134,11 @@ end
 
 function simpleCollision:update() end
 
+---Detects collision along a line between start and _end
 ---@param start Vector
 ---@param _end Vector
-function simpleCollision:checkLine(start, _end)
+---@param filteringSettings? table
+function simpleCollision:checkLine(start, _end, filteringSettings)
 	local lineAxis = (_end - start):normalized()
 	lineAxis = Vector2.new(lineAxis.y, -lineAxis.x)
 	local axisProjections = { lineAxis, Vector2.new(0, 1), Vector2.new(1, 0) }
@@ -158,7 +161,7 @@ function simpleCollision:checkLine(start, _end)
 
 	local partitions = getPartitionsFromArea(topLeftPoint, bottomRightPoint)
 
-	for _, collider in ipairs(getPossibleColliders(partitions)) do
+	for _, collider in ipairs(getPossibleColliders(partitions, filteringSettings)) do
 		local points = { getColliderPoints(collider) }
 		local isColliding = true
 		for _, axis in ipairs(axisProjections) do
@@ -186,9 +189,12 @@ function simpleCollision:checkLine(start, _end)
 	return false
 end
 
+---Creates, registers, and returns a collider with the given values. Note: The collider is hard referenced in the collider library
 ---@param position Vector
 ---@param scale Vector
-function simpleCollision:addCollider(position, scale, isStatic, super, layer)
+---@param super? table An additional table the collider will return upon being collided with
+---@param layer? string Determines on what layer the collider will exist on. Used for filtered collision detection
+function simpleCollision:addCollider(position, scale, super, layer)
 	layer = layer or "unorganized"
 	local collider = {
 		position = position,
@@ -202,12 +208,16 @@ function simpleCollision:addCollider(position, scale, isStatic, super, layer)
 	return setmetatable(collider, collisionMetaData)
 end
 
-function simpleCollision:checkSquare(position, scale, layerIndex)
+---Detects collision within a specified square
+---@param position Vector
+---@param scale Vector
+---@param filteringSettings? table Specifies the filtering settings used during collision detection. Used when wanting only specific objects to be detected
+function simpleCollision:checkSquare(position, scale, filteringSettings)
 	local collider = { position = position, scale = scale }
 	local partitions =
 		getPartitionsFromArea(collider.position - collider.scale / 2, collider.position + collider.scale / 2)
 
-	for _, secondCollider in ipairs(getPossibleColliders(partitions)) do
+	for _, secondCollider in ipairs(getPossibleColliders(partitions, filteringSettings)) do
 		if checkOverlap(collider, secondCollider) == true then
 			return true
 		end
@@ -215,10 +225,13 @@ function simpleCollision:checkSquare(position, scale, layerIndex)
 	return false
 end
 
-function simpleCollision:checkPoint(position)
+---Detects collision at a point
+---@param position Vector
+---@param filteringSettings? table
+function simpleCollision:checkPoint(position, filteringSettings)
 	local partition =
 		{ self.partitions[math.floor(position.x / PARTITION_SIZE)][math.floor(position.y / PARTITION_SIZE)] }
-	for _, collider in ipairs(getPossibleColliders(partition)) do
+	for _, collider in ipairs(getPossibleColliders(partition, filteringSettings)) do
 		if
 			position.x > collider.position.x - collider.scale.x / 2
 			and position.x < collider.position.x + collider.scale.x / 2
