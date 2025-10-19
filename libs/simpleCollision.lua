@@ -1,6 +1,5 @@
 local simpleCollision = {}
 
-simpleCollision.world = {}
 simpleCollision.lookUp = {}
 simpleCollision.partitions = {}
 local PARTITION_SIZE = 400
@@ -200,8 +199,6 @@ function simpleCollision:addCollider(position, scale, isStatic, super, layer)
 
 	self:setCollidersPartitions(collider)
 
-	self.world[#self.world + 1] = collider
-
 	return setmetatable(collider, collisionMetaData)
 end
 
@@ -240,14 +237,18 @@ end
 function simpleCollision:drawColliders_Debug()
 	love.graphics.push()
 	love.graphics.setColor(1, 0, 0, 0.25)
-	for i, v in pairs(self.world) do
-		love.graphics.rectangle(
-			"fill",
-			v.position.x - v.scale.x / 2,
-			v.position.y - v.scale.y / 2,
-			v.scale.x,
-			v.scale.y
-		)
+	for x, collumn in pairs(self.partitions) do
+		for y, row in pairs(collumn) do
+			for _, v in pairs(row) do
+				love.graphics.rectangle(
+					"fill",
+					v.position.x - v.scale.x / 2,
+					v.position.y - v.scale.y / 2,
+					v.scale.x,
+					v.scale.y
+				)
+			end
+		end
 	end
 
 	for x, collumn in pairs(simpleCollision.partitions) do
