@@ -87,6 +87,15 @@ local function getPartitionsFromArea(topLeftPoint, bottomRightPoint)
 	return partitions
 end
 
+---Creates and returns a table used for layer filtering
+---@param mode string
+---| "whitelist"
+---| "blacklist"
+---@param ... string The layers string index
+function simpleCollision.newFilteringSettings(mode, ...)
+	return { mode = mode, layers = { ... } }
+end
+
 function simpleCollision:setCollidersPartitions(collider)
 	local bottomRightPoint, _, _, topLeftPoint = getColliderPoints(collider)
 
