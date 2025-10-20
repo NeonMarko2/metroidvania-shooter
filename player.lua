@@ -1,7 +1,7 @@
 local player = {}
 
 player.position = Vector2.new(450, 100)
-player.collider = Collision:addCollider(player.position, Vector2.new(50, 50), false)
+player.collider = Collision:addCollider(player.position, Vector2.new(50, 50), player, "player")
 player.body = PhysicsBody.new(player.collider)
 player.weapon = require("rifle").new(player)
 
@@ -18,8 +18,10 @@ function player:update(dt)
 	if love.keyboard.isDown("space") and player.body.isGrounded then
 		player.body:throw(Vector2.new(0, -600))
 	end
+	local times = love.timer.getTime()
 	player.weapon:update(dt)
 	player.body:update(dt)
+
 	player.position = player.collider.position
 end
 
