@@ -4,6 +4,8 @@ simpleCollision.lookUp = {}
 simpleCollision.partitions = {}
 local PARTITION_SIZE = 400
 
+--- WHEN "DELETING" COLLIDERS MAKE SURE TO REMOVE THE COLLIDER FROM ALL PARTITIONS and THE LOOK UP TABLES and ANY OTHER HARD REFERENCES THAT POINT TO IT
+
 local function checkLayer(layerSettings, layer)
 	if layerSettings == nil then
 		return true
