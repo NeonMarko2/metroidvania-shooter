@@ -14,9 +14,9 @@ bodyMetaData.__index = bodyMetaData
 ---@return boolean wasSuccessful
 function bodyMetaData:move(newPosition)
 	local previousPosition = self.collider.position:copy()
-	self.collider.position = newPosition
+	self.collider:move(newPosition)
 	if self.collider:detectCollision() then
-		self.collider.position = previousPosition
+		self.collider:move(previousPosition)
 		return false
 	end
 
@@ -43,7 +43,7 @@ function bodyMetaData:update(dt)
 		self.velocity.x = 0
 	end
 
-	self:move(self.collider.position + Vector2.new(self.velocity.x, 0) * dt)
+	--self:move(self.collider.position + Vector2.new(self.velocity.x, 0) * dt)
 	self.velocity.y = self.velocity.y + 2000 * dt
 end
 

@@ -8,8 +8,8 @@ PhysicsBody = require("libs.physicsBody")
 local player = require("player")
 
 function love.load()
-	Collision:addCollider(Vector2.new(400, 300), Vector2.new(100, 100), false)
-	Collision:addCollider(Vector2.new(400, 550), Vector2.new(1000, 25), true)
+	Collision:addCollider(Vector2.new(100, 300), Vector2.new(100, 100), false)
+	Collision:addCollider(Vector2.new(400, 550), Vector2.new(600, 25), true)
 end
 
 function love.keypressed(key)
