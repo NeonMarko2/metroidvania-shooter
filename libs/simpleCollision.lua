@@ -105,6 +105,7 @@ function simpleCollision:removeCollidersPartitions(collider)
 	for _, partition in pairs(collidersPartitions) do
 		partition[collider] = nil
 	end
+	simpleCollision.lookUp[collider] = nil
 end
 
 ---@class Collider
@@ -288,23 +289,29 @@ function simpleCollision:drawColliders_Debug()
 			end
 		end
 	end
-
+	local bigCount = 0
+	local partitionCount = 0
 	for x, collumn in pairs(simpleCollision.partitions) do
 		for y, partition in pairs(collumn) do
+			partitionCount = partitionCount + 1
 			local count = 0
 			for _, colllider in pairs(partition) do
 				count = count + 1
 			end
-			love.graphics.setColor(1, 1, 1, 0.2 * count)
+			love.graphics.setColor(1, 1, 1, 0.2)
 			love.graphics.rectangle("fill", x * PARTITION_SIZE, y * PARTITION_SIZE, PARTITION_SIZE, PARTITION_SIZE)
 			love.graphics.print(
 				count,
 				x * PARTITION_SIZE + (PARTITION_SIZE / 2),
 				y * PARTITION_SIZE + (PARTITION_SIZE / 5)
 			)
+			love.graphics.rectangle("line", x * PARTITION_SIZE, y * PARTITION_SIZE, PARTITION_SIZE, PARTITION_SIZE)
+			bigCount = bigCount + count
 		end
 	end
 
+	love.graphics.print("Collider count: " .. bigCount, 15, 100)
+	love.graphics.print("Partition count: " .. partitionCount, 15, 125)
 	love.graphics.setColor(1, 1, 1, 1)
 	love.graphics.pop()
 end
