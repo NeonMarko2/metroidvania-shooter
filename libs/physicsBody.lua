@@ -4,6 +4,7 @@ local physicsBody = {}
 ---@field isGrounded boolean
 ---@field collider Collider
 ---@field velocity Vector
+---@field onMoveFiltrationSettings table
 local bodyMetaData = {}
 
 ---@private
@@ -15,7 +16,7 @@ bodyMetaData.__index = bodyMetaData
 function bodyMetaData:move(newPosition)
 	local previousPosition = self.collider.position:copy()
 	self.collider:move(newPosition)
-	if self.collider:detectCollision() then
+	if self.collider:detectCollision(self.onMoveFiltrationSettings) then
 		self.collider:move(previousPosition)
 		return false
 	end

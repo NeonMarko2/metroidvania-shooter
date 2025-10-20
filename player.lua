@@ -3,6 +3,7 @@ local player = {}
 player.position = Vector2.new(450, 100)
 player.collider = Collision:addCollider(player.position, Vector2.new(50, 50), player, "player")
 player.body = PhysicsBody.new(player.collider)
+player.body.onMoveFiltrationSettings = Collision.newFilteringSettings("whitelist", "ground")
 player.weapon = require("rifle").new(player)
 
 player.directionFacing = Vector2.new(0, 0)

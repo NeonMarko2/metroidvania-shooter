@@ -9,8 +9,8 @@ local player = require("player")
 local enemy = require("enemy")
 
 function love.load()
-	Collision:addCollider(Vector2.new(100, 300), Vector2.new(100, 100), false)
-	Collision:addCollider(Vector2.new(400, 550), Vector2.new(600, 25), true)
+	Collision:addCollider(Vector2.new(100, 300), Vector2.new(100, 100), false, "ground")
+	Collision:addCollider(Vector2.new(400, 550), Vector2.new(600, 25), true, "ground")
 	enemy.new(Vector2.new(600, 300))
 end
 
