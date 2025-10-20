@@ -192,6 +192,13 @@ function simpleCollision:checkLine(start, _end, filteringSettings)
 	return false
 end
 
+---Removes a collider from the collision world
+---@param collider Collider the collider for removal
+function simpleCollision:removeCollider(collider)
+	simpleCollision:removeCollidersPartitions(collider)
+	simpleCollision.lookUp[collider] = nil
+end
+
 ---Creates, registers, and returns a collider with the given values. Note: The collider is hard referenced in the collider library
 ---@param position Vector
 ---@param scale Vector
