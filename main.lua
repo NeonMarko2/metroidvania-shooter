@@ -6,10 +6,12 @@ Console = require("libs.console")
 Collision = require("libs.simpleCollision")
 PhysicsBody = require("libs.physicsBody")
 local player = require("player")
+local enemy = require("enemy")
 
 function love.load()
 	Collision:addCollider(Vector2.new(100, 300), Vector2.new(100, 100), false)
 	Collision:addCollider(Vector2.new(400, 550), Vector2.new(600, 25), true)
+	enemy.new(Vector2.new(600, 300))
 end
 
 function love.keypressed(key)
