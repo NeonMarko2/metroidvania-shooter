@@ -5,11 +5,11 @@ Timer = require("libs.timer")
 Console = require("libs.console")
 Collision = require("libs.simpleCollision")
 PhysicsBody = require("libs.physicsBody")
-local player = require("player")
+player = require("player")
+game = require("game")
 
 function love.load()
-	Collision:addCollider(Vector2.new(100, 300), Vector2.new(100, 100), false)
-	Collision:addCollider(Vector2.new(400, 550), Vector2.new(600, 25), true)
+	game:start()
 end
 
 function love.keypressed(key)
@@ -19,34 +19,13 @@ function love.keypressed(key)
 	end
 end
 
-local objects = {}
-
-function AddToUpdate(object)
-	objects[object] = object
-end
-
-function RemoveFromUpdate(object)
-	objects[object] = nil
-end
-
 function love.mousepressed(x, y, button) end
 
-local function runObjectUpdates(dt)
-	for _, object in pairs(objects) do
-		object:update(dt)
-	end
-end
-
 function love.update(dt)
-	player:update(dt)
-	runObjectUpdates(dt)
-	local mouseX, mouseY = love.mouse.getPosition()
-	Collision:update()
+	game:update(dt)
 end
 
 function love.draw()
-	love.graphics.setBackgroundColor(0.4, 0.2, 0.3, 1)
-	player:draw()
-	Collision:drawColliders_Debug()
+	game:draw()
 	Console:draw()
 end
