@@ -7,6 +7,9 @@ Collision = require("libs.simpleCollision")
 PhysicsBody = require("libs.physicsBody")
 player = require("player")
 game = require("game")
+local level_editor = require("editor")
+
+local current_mode = game
 
 function love.load()
 	game:start()
@@ -16,16 +19,22 @@ function love.keypressed(key)
 	if key == "`" then
 		Console:toggle()
 		--Console:close()
+	elseif key == "e" then
+		if current_mode == game then
+			current_mode = level_editor
+		else
+			current_mode = game
+		end
 	end
 end
 
 function love.mousepressed(x, y, button) end
 
 function love.update(dt)
-	game:update(dt)
+	current_mode:update(dt)
 end
 
 function love.draw()
-	game:draw()
+	current_mode:draw()
 	Console:draw()
 end
