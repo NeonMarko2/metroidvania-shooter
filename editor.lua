@@ -38,6 +38,16 @@ local function drawGrid()
 	love.graphics.pop()
 end
 
+local function drawModeNotifier()
+	love.graphics.push()
+	love.graphics.setColor(1, 1, 1, 0.2)
+	love.graphics.translate(-camera_position.x, -camera_position.y)
+	love.graphics.rectangle("fill", 0, love.graphics.getHeight() - 50, 350, 50)
+	love.graphics.setColor(1, 0.6, 1, 0.5)
+	love.graphics.print("Collider", 25, love.graphics.getHeight() - 35)
+	love.graphics.pop()
+end
+
 function editor:draw()
 	love.graphics.push()
 	love.graphics.scale(camera_scale)
@@ -45,6 +55,7 @@ function editor:draw()
 	love.graphics.translate(camera_position.x, camera_position.y)
 
 	drawGrid()
+	drawModeNotifier()
 
 	love.graphics.pop()
 end
