@@ -2,6 +2,7 @@ Vector2 = require("libs.vectors")
 Signal = require("libs.signal")
 Flux = require("libs.flux")
 Timer = require("libs.timer")
+Input = require("libs.input")
 Console = require("libs.console")
 Collision = require("libs.simpleCollision")
 PhysicsBody = require("libs.physicsBody")
@@ -16,6 +17,7 @@ function love.load()
 end
 
 function love.keypressed(key)
+	Input:sendInput(key, "began")
 	if key == "`" then
 		Console:toggle()
 		--Console:close()
@@ -26,6 +28,10 @@ function love.keypressed(key)
 			current_mode = game
 		end
 	end
+end
+
+function love.keyreleased(key)
+	Input:sendInput(key, "ended")
 end
 
 function love.mousepressed(x, y, button) end
